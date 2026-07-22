@@ -1,0 +1,42 @@
+name: Update RC Lens calendar
+
+on:
+  schedule:
+    # Tous les lundis à 06h00 UTC (07h00 ou 08h00 heure de Paris selon
+    # l'heure d'été/hiver). Modifie ce cron si tu veux un autre jour/heure.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    # Permet de lancer le workflow manuellement depuis l'onglet "Actions"
+    # du dépôt GitHub, pratique pour tester sans attendre le lundi.
+
+permissions:
+  contents: write
+  # Nécessaire pour que le workflow puisse pousser (commit/push) le
+  # fichier .ics mis à jour dans le dépôt.
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Générer le calendrier
+        run: python rclens_calendrier.py
+
+      - name: Committer et pousser si le fichier a changé
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add calendrier_rclens.ics
+          git diff --staged --quiet || git commit -m "Mise à jour du calendrier ($(date -u +'%Y-%m-%d'))"
+          git push
